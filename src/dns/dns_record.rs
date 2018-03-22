@@ -65,9 +65,9 @@ impl DnsRecord {
                 );
 
                 Ok(DnsRecord::A {
-                    domain: domain,
-                    addr: addr,
-                    ttl: ttl,
+                    domain,
+                    addr,
+                    ttl,
                 })
             }
 
@@ -90,46 +90,46 @@ impl DnsRecord {
                 );
 
                 Ok(DnsRecord::AAAA {
-                    domain: domain,
-                    addr: addr,
-                    ttl: ttl,
+                    domain,
+                    addr,
+                    ttl,
                 })
             }
 
             // NS and CNAME both have the same structure.
             QueryType::NS => {
-                let mut ns = String::new();
-                try!(buffer.read_qname(&mut ns));
+                let mut host = String::new();
+                try!(buffer.read_qname(&mut host));
 
                 Ok(DnsRecord::NS {
-                    domain: domain,
-                    host: ns,
-                    ttl: ttl,
+                    domain,
+                    host,
+                    ttl,
                 })
             }
 
             QueryType::CNAME => {
-                let mut cname = String::new();
-                try!(buffer.read_qname(&mut cname));
+                let mut host = String::new();
+                try!(buffer.read_qname(&mut host));
 
                 Ok(DnsRecord::CNAME {
-                    domain: domain,
-                    host: cname,
-                    ttl: ttl,
+                    domain,
+                    host,
+                    ttl,
                 })
             }
 
             // MX is almost like the previous two, but with one extra field for priority.
             QueryType::MX => {
                 let priority = try!(buffer.read_u16());
-                let mut mx = String::new();
-                try!(buffer.read_qname(&mut mx));
+                let mut host = String::new();
+                try!(buffer.read_qname(&mut host));
 
                 Ok(DnsRecord::MX {
-                    domain: domain,
-                    priority: priority,
-                    host: mx,
-                    ttl: ttl,
+                    domain,
+                    priority,
+                    host,
+                    ttl,
                 })
             }
 
@@ -138,10 +138,10 @@ impl DnsRecord {
                 try!(buffer.step(data_len as usize));
 
                 Ok(DnsRecord::UNKNOWN {
-                    domain: domain,
+                    domain,
                     qtype: qtype_num,
-                    data_len: data_len,
-                    ttl: ttl,
+                    data_len,
+                    ttl,
                 })
             }
         }

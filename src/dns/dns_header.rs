@@ -26,8 +26,8 @@ pub struct DnsHeader {
     pub resource_entries: u16,      // 16 bits
 }
 
-impl DnsHeader {
-    pub fn new() -> DnsHeader {
+impl Default for DnsHeader {
+    fn default() -> Self {
         DnsHeader {
             id: 0,
 
@@ -48,6 +48,12 @@ impl DnsHeader {
             authoritative_entries: 0,
             resource_entries: 0,
         }
+    }
+}
+
+impl DnsHeader {
+    pub fn new() -> DnsHeader {
+        DnsHeader::default()
     }
 
     pub fn read(&mut self, buffer: &mut BytePacketBuffer) -> Result<()> {
@@ -81,13 +87,13 @@ impl DnsHeader {
         try!(buffer.write_u16(self.id));
 
         try!(buffer.write_u8(
-            ((self.recursion_desired as u8)) | ((self.truncated_message as u8) << 1)
+            (self.recursion_desired as u8) | ((self.truncated_message as u8) << 1)
                 | ((self.authoritative_answer as u8) << 2) | (self.opcode << 3)
                 | ((self.response as u8) << 7) as u8
         ));
 
         try!(buffer.write_u8(
-            (self.rescode.clone() as u8) | ((self.checking_disabled as u8) << 4)
+            (self.rescode as u8) | ((self.checking_disabled as u8) << 4)
                 | ((self.authed_data as u8) << 5) | ((self.z as u8) << 6)
                 | ((self.recursion_available as u8) << 7)
         ));
