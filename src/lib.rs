@@ -42,7 +42,7 @@ pub fn recursive_lookup(qname: &str, qtype: QueryType) -> Result<DnsPacket> {
         let ns_copy = ns.clone();
 
         let server = (ns_copy.as_str(), 53);
-        let response = try!(lookup(qname, qtype.clone(), server));
+        let response = try!(lookup(qname, qtype, server));
 
         // If there are entries in the answer section, and no errors, we are done!
         if !response.answers.is_empty() && response.header.rescode == ResultCode::NOERROR {

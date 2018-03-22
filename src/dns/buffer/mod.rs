@@ -137,7 +137,7 @@ pub trait PacketBuffer {
         try!(self.write(((val >> 24) & 0xFF) as u8));
         try!(self.write(((val >> 16) & 0xFF) as u8));
         try!(self.write(((val >> 8) & 0xFF) as u8));
-        try!(self.write(((val >> 0) & 0xFF) as u8));
+        try!(self.write((val & 0xFF) as u8));
 
         Ok(())
     }
@@ -174,15 +174,15 @@ pub trait PacketBuffer {
     }
 
     fn read_u16(&mut self) -> Result<u16> {
-        let res = ((try!(self.read()) as u16) << 8) | (try!(self.read()) as u16);
+        let res = (u16::from(try!(self.read())) << 8) | (u16::from(try!(self.read())));
 
         Ok(res)
     }
 
     fn read_u32(&mut self) -> Result<u32> {
-        let res = ((try!(self.read()) as u32) << 24) | ((try!(self.read()) as u32) << 16)
-            | ((try!(self.read()) as u32) << 8)
-            | ((try!(self.read()) as u32) << 0);
+        let res = (u32::from(try!(self.read())) << 24) | (u32::from(try!(self.read())) << 16)
+            | (u32::from(try!(self.read())) << 8)
+            | (u32::from(try!(self.read())));
 
         Ok(res)
     }
@@ -206,8 +206,8 @@ pub trait PacketBuffer {
                     try!(self.seek(pos + 2));
                 }
 
-                let b2 = try!(self.get(pos + 1)) as u16;
-                let offset = (((len as u16) ^ 0xC0) << 8) | b2;
+                let b2 = u16::from(try!(self.get(pos + 1)));
+                let offset = ((u16::from(len) ^ 0xC0) << 8) | b2;
                 pos = offset as usize;
                 jumped = true;
                 continue;

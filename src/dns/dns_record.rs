@@ -61,14 +61,10 @@ impl DnsRecord {
                     ((raw_addr >> 24) & 0xFF) as u8,
                     ((raw_addr >> 16) & 0xFF) as u8,
                     ((raw_addr >> 8) & 0xFF) as u8,
-                    ((raw_addr >> 0) & 0xFF) as u8,
+                    (raw_addr & 0xFF) as u8,
                 );
 
-                Ok(DnsRecord::A {
-                    domain,
-                    addr,
-                    ttl,
-                })
+                Ok(DnsRecord::A { domain, addr, ttl })
             }
 
             // The AAAA record type follows the same logic, but with more numbers to keep
@@ -80,20 +76,16 @@ impl DnsRecord {
                 let raw_addr4 = try!(buffer.read_u32());
                 let addr = Ipv6Addr::new(
                     ((raw_addr1 >> 16) & 0xFFFF) as u16,
-                    ((raw_addr1 >> 0) & 0xFFFF) as u16,
+                    (raw_addr1 & 0xFFFF) as u16,
                     ((raw_addr2 >> 16) & 0xFFFF) as u16,
-                    ((raw_addr2 >> 0) & 0xFFFF) as u16,
+                    (raw_addr2 & 0xFFFF) as u16,
                     ((raw_addr3 >> 16) & 0xFFFF) as u16,
-                    ((raw_addr3 >> 0) & 0xFFFF) as u16,
+                    (raw_addr3 & 0xFFFF) as u16,
                     ((raw_addr4 >> 16) & 0xFFFF) as u16,
-                    ((raw_addr4 >> 0) & 0xFFFF) as u16,
+                    (raw_addr4 & 0xFFFF) as u16,
                 );
 
-                Ok(DnsRecord::AAAA {
-                    domain,
-                    addr,
-                    ttl,
-                })
+                Ok(DnsRecord::AAAA { domain, addr, ttl })
             }
 
             // NS and CNAME both have the same structure.
@@ -101,22 +93,14 @@ impl DnsRecord {
                 let mut host = String::new();
                 try!(buffer.read_qname(&mut host));
 
-                Ok(DnsRecord::NS {
-                    domain,
-                    host,
-                    ttl,
-                })
+                Ok(DnsRecord::NS { domain, host, ttl })
             }
 
             QueryType::CNAME => {
                 let mut host = String::new();
                 try!(buffer.read_qname(&mut host));
 
-                Ok(DnsRecord::CNAME {
-                    domain,
-                    host,
-                    ttl,
-                })
+                Ok(DnsRecord::CNAME { domain, host, ttl })
             }
 
             // MX is almost like the previous two, but with one extra field for priority.

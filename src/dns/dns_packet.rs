@@ -2,7 +2,7 @@ use std::io::Result;
 
 use rand::random;
 
-use PacketBuffer;
+// use PacketBuffer;
 use BytePacketBuffer;
 use QueryType;
 use DnsRecord;
@@ -18,8 +18,8 @@ pub struct DnsPacket {
     pub resources: Vec<DnsRecord>,
 }
 
-impl DnsPacket {
-    pub fn new() -> DnsPacket {
+impl Default for DnsPacket {
+    fn default() -> Self {
         DnsPacket {
             header: DnsHeader::new(),
             questions: Vec::new(),
@@ -27,6 +27,11 @@ impl DnsPacket {
             authorities: Vec::new(),
             resources: Vec::new(),
         }
+    }
+}
+impl DnsPacket {
+    pub fn new() -> DnsPacket {
+        DnsPacket::default()
     }
 
     pub fn from_buffer(buffer: &mut BytePacketBuffer) -> Result<DnsPacket> {
@@ -127,7 +132,7 @@ impl DnsPacket {
                         let rec = DnsRecord::A {
                             domain: host.clone(),
                             addr: *addr,
-                            ttl: ttl,
+                            ttl,
                         };
 
                         // ...and push any matches to a list.
