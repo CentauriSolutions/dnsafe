@@ -1,117 +1,76 @@
-use nom::{IResult, be_u8, be_u16, le_u8, le_u16};
+use std::io::Result;
 
+use BytePacketBuffer;
 use ResultCode;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_parses_a_query_header() {
-        let packet = include_bytes!("../tests/query_packet.txt");
-        let header = DnsHeader::read(&packet[..]).unwrap().1;
-        println!("Header: {:?}", header);
-    }
-}
-
-#[derive(Clone, Debug)]
+#[derive(Clone,Debug)]
 pub struct DnsHeader {
     pub id: u16, // 16 bits
 
-    pub recursion_desired: bool,    // 1 bit
-    pub truncated_message: bool,    // 1 bit
+    pub recursion_desired: bool, // 1 bit
+    pub truncated_message: bool, // 1 bit
     pub authoritative_answer: bool, // 1 bit
-    pub opcode: u8,                 // 4 bits
-    pub response: bool,             // 1 bit
+    pub opcode: u8, // 4 bits
+    pub response: bool, // 1 bit
 
-    pub rescode: ResultCode,       // 4 bits
-    pub checking_disabled: bool,   // 1 bit
-    pub authed_data: bool,         // 1 bit
-    pub z: bool,                   // 1 bit
+    pub rescode: ResultCode, // 4 bits
+    pub checking_disabled: bool, // 1 bit
+    pub authed_data: bool, // 1 bit
+    pub z: bool, // 1 bit
     pub recursion_available: bool, // 1 bit
 
-    pub questions: u16,             // 16 bits
-    pub answers: u16,               // 16 bits
+    pub questions: u16, // 16 bits
+    pub answers: u16, // 16 bits
     pub authoritative_entries: u16, // 16 bits
-    pub resource_entries: u16,      // 16 bits
+    pub resource_entries: u16 // 16 bits
 }
 
 impl DnsHeader {
     pub fn new() -> DnsHeader {
-        DnsHeader {
-            id: 0,
+        DnsHeader { id: 0,
 
-            recursion_desired: false,
-            truncated_message: false,
-            authoritative_answer: false,
-            opcode: 0,
-            response: false,
+                    recursion_desired: false,
+                    truncated_message: false,
+                    authoritative_answer: false,
+                    opcode: 0,
+                    response: false,
 
-            rescode: ResultCode::NOERROR,
-            checking_disabled: false,
-            authed_data: false,
-            z: false,
-            recursion_available: false,
+                    rescode: ResultCode::NOERROR,
+                    checking_disabled: false,
+                    authed_data: false,
+                    z: false,
+                    recursion_available: false,
 
-            questions: 0,
-            answers: 0,
-            authoritative_entries: 0,
-            resource_entries: 0,
-        }
+                    questions: 0,
+                    answers: 0,
+                    authoritative_entries: 0,
+                    resource_entries: 0 }
     }
 
-    pub fn read(input: &[u8]) -> IResult<&[u8], DnsHeader> {
-        dns_header(input)
+    pub fn read(&mut self, buffer: &mut BytePacketBuffer) -> Result<()> {
+        self.id = try!(buffer.read_u16());
+
+        let flags = try!(buffer.read_u16());
+        let a = (flags >> 8) as u8;
+        let b = (flags & 0xFF) as u8;
+        self.recursion_desired = (a & (1 << 0)) > 0;
+        self.truncated_message = (a & (1 << 1)) > 0;
+        self.authoritative_answer = (a & (1 << 2)) > 0;
+        self.opcode = (a >> 3) & 0x0F;
+        self.response = (a & (1 << 7)) > 0;
+
+        self.rescode = ResultCode::from_num(b & 0x0F);
+        self.checking_disabled = (b & (1 << 4)) > 0;
+        self.authed_data = (b & (1 << 5)) > 0;
+        self.z = (b & (1 << 6)) > 0;
+        self.recursion_available = (b & (1 << 7)) > 0;
+
+        self.questions = try!(buffer.read_u16());
+        self.answers = try!(buffer.read_u16());
+        self.authoritative_entries = try!(buffer.read_u16());
+        self.resource_entries = try!(buffer.read_u16());
+
+        // Return the constant header size
+        Ok(())
     }
 }
-
-named!(dns_header <DnsHeader>,
-    do_parse!(
-        id: le_u16 >>
-        recursion_desired: take_bool >>
-        truncated_message: take_bool >>
-        authoritative_answer: take_bool >>
-        opcode: le_u8 >>
-        response: take_bool >>
-        rescode: rescode >>
-        checking_disabled: take_bool >>
-        authed_data: take_bool >>
-        z: take_bool >>
-        recursion_available: take_bool >>
-        questions: le_u16 >>
-        answers: be_u16 >>
-        authoritative_entries:be_u16 >>
-        resource_entries: be_u16 >> (
-            DnsHeader {
-                id,
-                recursion_desired,
-                truncated_message,
-                authoritative_answer,
-                opcode,
-                response,
-                rescode,
-                checking_disabled,
-                authed_data,
-                z,
-                recursion_available,
-                questions,
-                answers,
-                authoritative_entries,
-                resource_entries
-            }
-        )
-));
-
-named!( rescode<ResultCode>, do_parse!(
-    num: be_u8 >> (
-        ResultCode::from_num(num)
-    )
-));
-
-named!( take_bool<bool>, do_parse!(
-    b: take_bit >> (
-        b == 1
-    )
-));
-
-named!( take_bit<u8>, bits!( take_bits!( u8, 1 ) ) );
