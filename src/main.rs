@@ -2,8 +2,7 @@ extern crate dnsafe;
 
 use std::net::UdpSocket;
 
-use dnsafe::{recursive_lookup, BytePacketBuffer, DnsPacket, DnsQuestion, PacketBuffer, QueryType,
-             ResultCode};
+use dnsafe::{recursive_lookup, PacketBuffer, BytePacketBuffer, DnsPacket, ResultCode};
 
 fn main() {
     // Bind an UDP socket on port 2053

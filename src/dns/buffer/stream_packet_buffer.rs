@@ -15,6 +15,7 @@ impl<'a, T> StreamPacketBuffer<'a, T>
 where
     T: Read + 'a,
 {
+    #[allow(dead_code)]
     pub fn new(stream: &'a mut T) -> StreamPacketBuffer<T> {
         StreamPacketBuffer {
             stream,

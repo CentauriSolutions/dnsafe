@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 
 use super::PacketBuffer;
 
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct VectorPacketBuffer {
     pub buffer: Vec<u8>,
@@ -11,6 +12,7 @@ pub struct VectorPacketBuffer {
 }
 
 impl VectorPacketBuffer {
+    #[allow(dead_code)]
     pub fn new() -> VectorPacketBuffer {
         VectorPacketBuffer {
             buffer: Vec::new(),
