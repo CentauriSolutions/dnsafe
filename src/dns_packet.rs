@@ -12,12 +12,22 @@ mod test {
     use super::*;
 
     #[test]
-    fn it_parses_a_header() {
+    fn it_parses_a_request() {
         let mut input = Cursor::new(include_bytes!("../tests/query_packet.txt").to_vec());
         let mut buffer = BytePacketBuffer::new();
         input.read(&mut buffer.buf).unwrap();
         let record = DnsPacket::from_buffer(&mut buffer).unwrap();
-        println!("Record: {:?}", record);
+        assert_eq!(record.questions[0].name, "centauri.solutions");
+    }
+
+    #[test]
+    fn it_parses_a_response() {
+        let mut input = Cursor::new(include_bytes!("../tests/response_packet.txt").to_vec());
+        let mut buffer = BytePacketBuffer::new();
+        input.read(&mut buffer.buf).unwrap();
+        let record = DnsPacket::from_buffer(&mut buffer).unwrap();
+        assert_eq!(record.questions[0].name, "centauri.solutions");
+        assert_eq!(record.answers[0], DnsRecord::A{domain: "centauri.solutions".into(), addr: "104.27.149.54".parse().unwrap(), ttl: 274});
     }
 }
 
