@@ -2,7 +2,7 @@ extern crate dnsafe;
 
 use std::net::UdpSocket;
 
-use dnsafe::{BytePacketBuffer, QueryType, DnsPacket, DnsQuestion, ResultCode, recursive_lookup};
+use dnsafe::{recursive_lookup, BytePacketBuffer, DnsPacket, PacketBuffer, ResultCode};
 
 fn main() {
     // Bind an UDP socket on port 2053
@@ -13,8 +13,7 @@ fn main() {
     // For now, queries are handled sequentially, so an infinite loop for servicing
     // requests is initiated.
     loop {
-
-        // With a socket ready, we can go ahead and read a packet. This will 
+        // With a socket ready, we can go ahead and read a packet. This will
         // block until one is received.
         let mut req_buffer = BytePacketBuffer::new();
         let (_, src) = match socket.recv_from(&mut req_buffer.buf) {
@@ -56,7 +55,6 @@ fn main() {
         if request.questions.is_empty() {
             packet.header.rescode = ResultCode::FORMERR;
         }
-
         // Usually a question will be present, though.
         else {
             let question = &request.questions[0];
@@ -87,7 +85,7 @@ fn main() {
 
             let mut res_buffer = BytePacketBuffer::new();
             match packet.write(&mut res_buffer) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => {
                     println!("Failed to encode UDP response packet: {:?}", e);
                     continue;
@@ -104,7 +102,7 @@ fn main() {
             };
 
             match socket.send_to(data, src) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => {
                     println!("Failed to send response buffer: {:?}", e);
                     continue;

@@ -1,37 +1,13 @@
-use std::io::{Result};
+use std::io::Result;
 
 use rand::random;
 
+// use PacketBuffer;
 use BytePacketBuffer;
 use QueryType;
 use DnsRecord;
 use DnsHeader;
 use DnsQuestion;
-
-#[cfg(test)]
-mod test {
-    use std::io::{Cursor, Read};
-    use super::*;
-
-    #[test]
-    fn it_parses_a_request() {
-        let mut input = Cursor::new(include_bytes!("../tests/query_packet.txt").to_vec());
-        let mut buffer = BytePacketBuffer::new();
-        input.read(&mut buffer.buf).unwrap();
-        let record = DnsPacket::from_buffer(&mut buffer).unwrap();
-        assert_eq!(record.questions[0].name, "centauri.solutions");
-    }
-
-    #[test]
-    fn it_parses_a_response() {
-        let mut input = Cursor::new(include_bytes!("../tests/response_packet.txt").to_vec());
-        let mut buffer = BytePacketBuffer::new();
-        input.read(&mut buffer.buf).unwrap();
-        let record = DnsPacket::from_buffer(&mut buffer).unwrap();
-        assert_eq!(record.questions[0].name, "centauri.solutions");
-        assert_eq!(record.answers[0], DnsRecord::A{domain: "centauri.solutions".into(), addr: "104.27.149.54".parse().unwrap(), ttl: 274});
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct DnsPacket {
@@ -39,18 +15,23 @@ pub struct DnsPacket {
     pub questions: Vec<DnsQuestion>,
     pub answers: Vec<DnsRecord>,
     pub authorities: Vec<DnsRecord>,
-    pub resources: Vec<DnsRecord>
+    pub resources: Vec<DnsRecord>,
 }
 
-impl DnsPacket {
-    pub fn new() -> DnsPacket {
+impl Default for DnsPacket {
+    fn default() -> Self {
         DnsPacket {
             header: DnsHeader::new(),
             questions: Vec::new(),
             answers: Vec::new(),
             authorities: Vec::new(),
-            resources: Vec::new()
+            resources: Vec::new(),
         }
+    }
+}
+impl DnsPacket {
+    pub fn new() -> DnsPacket {
+        DnsPacket::default()
     }
 
     pub fn from_buffer(buffer: &mut BytePacketBuffer) -> Result<DnsPacket> {
@@ -58,8 +39,7 @@ impl DnsPacket {
         try!(result.header.read(buffer));
 
         for _ in 0..result.header.questions {
-            let mut question = DnsQuestion::new("".to_string(),
-                                                QueryType::UNKNOWN(0));
+            let mut question = DnsQuestion::new("".to_string(), QueryType::UNKNOWN(0));
             try!(question.read(buffer));
             result.questions.push(question);
         }
@@ -80,8 +60,7 @@ impl DnsPacket {
         Ok(result)
     }
 
-    pub fn write(&mut self, buffer: &mut BytePacketBuffer) -> Result<()>
-    {
+    pub fn write(&mut self, buffer: &mut BytePacketBuffer) -> Result<()> {
         self.header.questions = self.questions.len() as u16;
         self.header.answers = self.answers.len() as u16;
         self.header.authoritative_entries = self.authorities.len() as u16;
@@ -112,7 +91,7 @@ impl DnsPacket {
         if !self.answers.is_empty() {
             let idx = random::<usize>() % self.answers.len();
             let a_record = &self.answers[idx];
-            if let DnsRecord::A{ ref addr, .. } = *a_record {
+            if let DnsRecord::A { ref addr, .. } = *a_record {
                 return Some(addr.to_string());
             }
         }
@@ -124,11 +103,15 @@ impl DnsPacket {
     // A records when replying to an NS query to implement a function that returns
     // the actual IP for an NS record if possible.
     pub fn get_resolved_ns(&self, qname: &str) -> Option<String> {
-
         // First, we scan the list of NS records in the authorities section:
         let mut new_authorities = Vec::new();
         for auth in &self.authorities {
-            if let DnsRecord::NS { ref domain, ref host, .. } = *auth {
+            if let DnsRecord::NS {
+                ref domain,
+                ref host,
+                ..
+            } = *auth
+            {
                 if !qname.ends_with(domain) {
                     continue;
                 }
@@ -136,7 +119,12 @@ impl DnsPacket {
                 // Once we've found an NS record, we scan the resources record for a matching
                 // A record...
                 for rsrc in &self.resources {
-                    if let DnsRecord::A{ ref domain, ref addr, ttl } = *rsrc {
+                    if let DnsRecord::A {
+                        ref domain,
+                        ref addr,
+                        ttl,
+                    } = *rsrc
+                    {
                         if domain != host {
                             continue;
                         }
@@ -144,7 +132,7 @@ impl DnsPacket {
                         let rec = DnsRecord::A {
                             domain: host.clone(),
                             addr: *addr,
-                            ttl: ttl
+                            ttl,
                         };
 
                         // ...and push any matches to a list.
@@ -169,10 +157,14 @@ impl DnsPacket {
     // lookup in the midst. For this, we introduce a method for returning the host
     // name of an appropriate name server.
     pub fn get_unresolved_ns(&self, qname: &str) -> Option<String> {
-
         let mut new_authorities = Vec::new();
         for auth in &self.authorities {
-            if let DnsRecord::NS { ref domain, ref host, .. } = *auth {
+            if let DnsRecord::NS {
+                ref domain,
+                ref host,
+                ..
+            } = *auth
+            {
                 if !qname.ends_with(domain) {
                     continue;
                 }
