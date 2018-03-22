@@ -58,4 +58,30 @@ impl DnsRecord {
             }
         }
     }
+
+    pub fn write(&self, buffer: &mut BytePacketBuffer) -> Result<usize> {
+
+        let start_pos = buffer.pos();
+
+        match *self {
+            DnsRecord::A { ref domain, ref addr, ttl } => {
+                try!(buffer.write_qname(domain));
+                try!(buffer.write_u16(QueryType::A.to_num()));
+                try!(buffer.write_u16(1));
+                try!(buffer.write_u32(ttl));
+                try!(buffer.write_u16(4));
+
+                let octets = addr.octets();
+                try!(buffer.write_u8(octets[0]));
+                try!(buffer.write_u8(octets[1]));
+                try!(buffer.write_u8(octets[2]));
+                try!(buffer.write_u8(octets[3]));
+            },
+            DnsRecord::UNKNOWN { .. } => {
+                println!("Skipping record: {:?}", self);
+            }
+        }
+
+        Ok(buffer.pos() - start_pos)
+    }
 }
