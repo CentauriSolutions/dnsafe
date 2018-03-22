@@ -2,12 +2,9 @@ extern crate dnsafe;
 
 use std::net::UdpSocket;
 
-use dnsafe::{BytePacketBuffer, QueryType, DnsPacket, DnsQuestion, ResultCode, lookup};
+use dnsafe::{BytePacketBuffer, QueryType, DnsPacket, DnsQuestion, ResultCode, recursive_lookup};
 
 fn main() {
-    // Forward queries to Google's public DNS
-    let server = ("8.8.8.8", 53);
-
     // Bind an UDP socket on port 2053
     let socket = UdpSocket::bind(("0.0.0.0", 2053)).unwrap();
 
@@ -64,13 +61,9 @@ fn main() {
         else {
             let question = &request.questions[0];
             println!("Received query: {:?}", question);
-
-            // Since all is set up and as expected, the query can be forwarded to the target
-            // server. There's always the possibility that the query will fail, in which case
-            // the `SERVFAIL` response code is set to indicate as much to the client. If
-            // rather everything goes as planned, the question and response records as copied
-            // into our response packet.
-            if let Ok(result) = lookup(&question.name, question.qtype, server) {
+            if let Ok(result) = recursive_lookup(&question.name, question.qtype) {
+                packet.questions.push(question.clone());
+                packet.header.rescode = result.header.rescode;
                 packet.questions.push(question.clone());
                 packet.header.rescode = result.header.rescode;
 
