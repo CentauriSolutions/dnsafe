@@ -6,7 +6,7 @@ use dnsafe::{BytePacketBuffer, QueryType, DnsPacket, DnsQuestion};
 
 fn main() {
         // Perform an A query for google.com
-    let qname = "google.com";
+    let qname = "www.yahoo.com";
     let qtype = QueryType::A;
 
     // Using googles public DNS server
