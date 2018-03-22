@@ -3,21 +3,10 @@ extern crate rand;
 use std::net::UdpSocket;
 use std::io::Result;
 
-mod byte_packet_buffer;
-mod dns_header;
-mod result_code;
-mod query_type;
-mod dns_question;
-mod dns_record;
-mod dns_packet;
+mod dns;
 
-pub use byte_packet_buffer::BytePacketBuffer;
-pub use dns_header::DnsHeader;
-pub use result_code::ResultCode;
-pub use query_type::QueryType;
-pub use dns_record::DnsRecord;
-pub use dns_packet::DnsPacket;
-pub use dns_question::DnsQuestion;
+pub use dns::{BytePacketBuffer, DnsHeader, DnsPacket, DnsQuestion, DnsRecord, PacketBuffer,
+              QueryType, ResultCode};
 
 pub fn lookup(qname: &str, qtype: QueryType, server: (&str, u16)) -> Result<DnsPacket> {
     let socket = try!(UdpSocket::bind(("0.0.0.0", 43210)));
@@ -27,7 +16,9 @@ pub fn lookup(qname: &str, qtype: QueryType, server: (&str, u16)) -> Result<DnsP
     packet.header.id = 6666;
     packet.header.questions = 1;
     packet.header.recursion_desired = true;
-    packet.questions.push(DnsQuestion::new(qname.to_string(), qtype));
+    packet
+        .questions
+        .push(DnsQuestion::new(qname.to_string(), qtype));
 
     let mut req_buffer = BytePacketBuffer::new();
     packet.write(&mut req_buffer).unwrap();
@@ -40,7 +31,6 @@ pub fn lookup(qname: &str, qtype: QueryType, server: (&str, u16)) -> Result<DnsP
 }
 
 pub fn recursive_lookup(qname: &str, qtype: QueryType) -> Result<DnsPacket> {
-
     // For now we're always starting with *a.root-servers.net*.
     let mut ns = "198.41.0.4".to_string();
 
@@ -55,9 +45,7 @@ pub fn recursive_lookup(qname: &str, qtype: QueryType) -> Result<DnsPacket> {
         let response = try!(lookup(qname, qtype.clone(), server));
 
         // If there are entries in the answer section, and no errors, we are done!
-        if !response.answers.is_empty() &&
-           response.header.rescode == ResultCode::NOERROR {
-
+        if !response.answers.is_empty() && response.header.rescode == ResultCode::NOERROR {
             return Ok(response.clone());
         }
 
@@ -80,7 +68,7 @@ pub fn recursive_lookup(qname: &str, qtype: QueryType) -> Result<DnsPacket> {
         // we'll go with what the last server told us.
         let new_ns_name = match response.get_unresolved_ns(qname) {
             Some(x) => x,
-            None => return Ok(response.clone())
+            None => return Ok(response.clone()),
         };
 
         // Here we go down the rabbit hole by starting _another_ lookup sequence in the
@@ -93,8 +81,7 @@ pub fn recursive_lookup(qname: &str, qtype: QueryType) -> Result<DnsPacket> {
         if let Some(new_ns) = recursive_response.get_random_a() {
             ns = new_ns.clone();
         } else {
-            return Ok(response.clone())
+            return Ok(response.clone());
         }
     }
 } // End of recursive_lookup
-

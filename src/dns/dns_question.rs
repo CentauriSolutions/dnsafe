@@ -1,19 +1,20 @@
 use std::io::Result;
 
+use PacketBuffer;
 use BytePacketBuffer;
 use QueryType;
 
-#[derive(Debug,Clone,PartialEq,Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsQuestion {
     pub name: String,
-    pub qtype: QueryType
+    pub qtype: QueryType,
 }
 
 impl DnsQuestion {
     pub fn new(name: String, qtype: QueryType) -> DnsQuestion {
         DnsQuestion {
             name: name,
-            qtype: qtype
+            qtype: qtype,
         }
     }
 
@@ -26,7 +27,6 @@ impl DnsQuestion {
     }
 
     pub fn write(&self, buffer: &mut BytePacketBuffer) -> Result<()> {
-
         try!(buffer.write_qname(&self.name));
 
         let typenum = self.qtype.to_num();

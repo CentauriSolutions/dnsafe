@@ -1,47 +1,47 @@
 use std::net::{Ipv4Addr, Ipv6Addr};
-use std::io::{Result};
+use std::io::Result;
 
+use PacketBuffer;
 use BytePacketBuffer;
 use QueryType;
 
-#[derive(Debug,Clone,PartialEq,Eq,Hash,PartialOrd,Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum DnsRecord {
     UNKNOWN {
         domain: String,
         qtype: u16,
         data_len: u16,
-        ttl: u32
+        ttl: u32,
     }, // 0
     A {
         domain: String,
         addr: Ipv4Addr,
-        ttl: u32
+        ttl: u32,
     }, // 1
     NS {
         domain: String,
         host: String,
-        ttl: u32
+        ttl: u32,
     }, // 2
     CNAME {
         domain: String,
         host: String,
-        ttl: u32
+        ttl: u32,
     }, // 5
     MX {
         domain: String,
         priority: u16,
         host: String,
-        ttl: u32
+        ttl: u32,
     }, // 15
     AAAA {
         domain: String,
         addr: Ipv6Addr,
-        ttl: u32
+        ttl: u32,
     }, // 28
 }
 
 impl DnsRecord {
-
     pub fn read(buffer: &mut BytePacketBuffer) -> Result<DnsRecord> {
         let mut domain = String::new();
         try!(buffer.read_qname(&mut domain));
@@ -53,22 +53,23 @@ impl DnsRecord {
         let data_len = try!(buffer.read_u16());
 
         match qtype {
-
             // Handle each record type separately, starting with the A record
             // type which remains the same as before.
-            QueryType::A  => {
+            QueryType::A => {
                 let raw_addr = try!(buffer.read_u32());
-                let addr = Ipv4Addr::new(((raw_addr >> 24) & 0xFF) as u8,
-                                        ((raw_addr >> 16) & 0xFF) as u8,
-                                        ((raw_addr >> 8) & 0xFF) as u8,
-                                        ((raw_addr >> 0) & 0xFF) as u8);
+                let addr = Ipv4Addr::new(
+                    ((raw_addr >> 24) & 0xFF) as u8,
+                    ((raw_addr >> 16) & 0xFF) as u8,
+                    ((raw_addr >> 8) & 0xFF) as u8,
+                    ((raw_addr >> 0) & 0xFF) as u8,
+                );
 
                 Ok(DnsRecord::A {
                     domain: domain,
                     addr: addr,
-                    ttl: ttl
+                    ttl: ttl,
                 })
-            },
+            }
 
             // The AAAA record type follows the same logic, but with more numbers to keep
             // track off.
@@ -77,21 +78,23 @@ impl DnsRecord {
                 let raw_addr2 = try!(buffer.read_u32());
                 let raw_addr3 = try!(buffer.read_u32());
                 let raw_addr4 = try!(buffer.read_u32());
-                let addr = Ipv6Addr::new(((raw_addr1 >> 16) & 0xFFFF) as u16,
-                                        ((raw_addr1 >> 0) & 0xFFFF) as u16,
-                                        ((raw_addr2 >> 16) & 0xFFFF) as u16,
-                                        ((raw_addr2 >> 0) & 0xFFFF) as u16,
-                                        ((raw_addr3 >> 16) & 0xFFFF) as u16,
-                                        ((raw_addr3 >> 0) & 0xFFFF) as u16,
-                                        ((raw_addr4 >> 16) & 0xFFFF) as u16,
-                                        ((raw_addr4 >> 0) & 0xFFFF) as u16);
+                let addr = Ipv6Addr::new(
+                    ((raw_addr1 >> 16) & 0xFFFF) as u16,
+                    ((raw_addr1 >> 0) & 0xFFFF) as u16,
+                    ((raw_addr2 >> 16) & 0xFFFF) as u16,
+                    ((raw_addr2 >> 0) & 0xFFFF) as u16,
+                    ((raw_addr3 >> 16) & 0xFFFF) as u16,
+                    ((raw_addr3 >> 0) & 0xFFFF) as u16,
+                    ((raw_addr4 >> 16) & 0xFFFF) as u16,
+                    ((raw_addr4 >> 0) & 0xFFFF) as u16,
+                );
 
                 Ok(DnsRecord::AAAA {
                     domain: domain,
                     addr: addr,
-                    ttl: ttl
+                    ttl: ttl,
                 })
-            },
+            }
 
             // NS and CNAME both have the same structure.
             QueryType::NS => {
@@ -101,9 +104,9 @@ impl DnsRecord {
                 Ok(DnsRecord::NS {
                     domain: domain,
                     host: ns,
-                    ttl: ttl
+                    ttl: ttl,
                 })
-            },
+            }
 
             QueryType::CNAME => {
                 let mut cname = String::new();
@@ -112,9 +115,9 @@ impl DnsRecord {
                 Ok(DnsRecord::CNAME {
                     domain: domain,
                     host: cname,
-                    ttl: ttl
+                    ttl: ttl,
                 })
-            },
+            }
 
             // MX is almost like the previous two, but with one extra field for priority.
             QueryType::MX => {
@@ -126,9 +129,9 @@ impl DnsRecord {
                     domain: domain,
                     priority: priority,
                     host: mx,
-                    ttl: ttl
+                    ttl: ttl,
                 })
-            },
+            }
 
             // And we end with some code for handling unknown record types, as before.
             QueryType::UNKNOWN(_) => {
@@ -138,7 +141,7 @@ impl DnsRecord {
                     domain: domain,
                     qtype: qtype_num,
                     data_len: data_len,
-                    ttl: ttl
+                    ttl: ttl,
                 })
             }
         }
@@ -148,7 +151,11 @@ impl DnsRecord {
         let start_pos = buffer.pos();
 
         match *self {
-            DnsRecord::A { ref domain, ref addr, ttl } => {
+            DnsRecord::A {
+                ref domain,
+                ref addr,
+                ttl,
+            } => {
                 try!(buffer.write_qname(domain));
                 try!(buffer.write_u16(QueryType::A.to_num()));
                 try!(buffer.write_u16(1));
@@ -160,8 +167,12 @@ impl DnsRecord {
                 try!(buffer.write_u8(octets[1]));
                 try!(buffer.write_u8(octets[2]));
                 try!(buffer.write_u8(octets[3]));
-            },
-            DnsRecord::NS { ref domain, ref host, ttl } => {
+            }
+            DnsRecord::NS {
+                ref domain,
+                ref host,
+                ttl,
+            } => {
                 try!(buffer.write_qname(domain));
                 try!(buffer.write_u16(QueryType::NS.to_num()));
                 try!(buffer.write_u16(1));
@@ -174,8 +185,12 @@ impl DnsRecord {
 
                 let size = buffer.pos() - (pos + 2);
                 try!(buffer.set_u16(pos, size as u16));
-            },
-            DnsRecord::CNAME { ref domain, ref host, ttl } => {
+            }
+            DnsRecord::CNAME {
+                ref domain,
+                ref host,
+                ttl,
+            } => {
                 try!(buffer.write_qname(domain));
                 try!(buffer.write_u16(QueryType::CNAME.to_num()));
                 try!(buffer.write_u16(1));
@@ -188,8 +203,13 @@ impl DnsRecord {
 
                 let size = buffer.pos() - (pos + 2);
                 try!(buffer.set_u16(pos, size as u16));
-            },
-            DnsRecord::MX { ref domain, priority, ref host, ttl } => {
+            }
+            DnsRecord::MX {
+                ref domain,
+                priority,
+                ref host,
+                ttl,
+            } => {
                 try!(buffer.write_qname(domain));
                 try!(buffer.write_u16(QueryType::MX.to_num()));
                 try!(buffer.write_u16(1));
@@ -203,8 +223,12 @@ impl DnsRecord {
 
                 let size = buffer.pos() - (pos + 2);
                 try!(buffer.set_u16(pos, size as u16));
-            },
-            DnsRecord::AAAA { ref domain, ref addr, ttl } => {
+            }
+            DnsRecord::AAAA {
+                ref domain,
+                ref addr,
+                ttl,
+            } => {
                 try!(buffer.write_qname(domain));
                 try!(buffer.write_u16(QueryType::AAAA.to_num()));
                 try!(buffer.write_u16(1));
@@ -214,7 +238,7 @@ impl DnsRecord {
                 for octet in &addr.segments() {
                     try!(buffer.write_u16(*octet));
                 }
-            },
+            }
             DnsRecord::UNKNOWN { .. } => {
                 println!("Skipping record: {:?}", self);
             }
